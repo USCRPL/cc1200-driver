@@ -18,13 +18,13 @@ char const * const punctuation1Morse[] = {"-.-.--", ".-..-.", nullptr, "...-..-"
 // covers ASCII range 0x3A-0x40
 char const * const punctuation2Morse[] = {"---...", "-.-.-.", nullptr, "-...-", nullptr, "..--..", ".--.-."};
 
-void CC1200Morse::configure(CC1200::Band band, float radioFrequency, float morseTimePeriod, float transmitPower)
+void CC1200Morse::configure(CC1200::Band band, float radioFrequency, std::chrono::milliseconds morseTimePeriod, float transmitPower)
 {
 	radio.setPacketMode(CC1200::PacketMode::FIXED_LENGTH);
 	radio.setCRCEnabled(false);
 
 	// set frequency
-	radio.setSymbolRate(1/morseTimePeriod);
+	radio.setSymbolRate(1/std::chrono::duration_cast<std::chrono::duration<float>>(morseTimePeriod).count());
 	radio.setRadioFrequency(band, radioFrequency);
 
 	// disable anything getting sent before the data

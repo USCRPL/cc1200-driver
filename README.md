@@ -46,6 +46,7 @@ For configuring radio settings, TI provides a number of configurations for you i
 - Migrate to CMake build system
 - Switch the debug stream to be a FILE * instead of the deprecated Stream class
 - Bring in CC1200Morse project
+- Switch time unit in CC1200Morse to std::chrono
 
 ### Version 1.2 May 3 2021
 

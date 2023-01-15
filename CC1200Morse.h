@@ -25,13 +25,14 @@ public:
 	 *
 	 * @param band Radio band containing the frequency.
 	 * @param radioFrequency Frequency to transmit on.
-	 * @param morseTimePeriod Time unit in seconds to use when transmitting.
+	 * @param morseTimePeriod Time unit to use when transmitting.
 	 * @param transmitPower Power in dBm to transmit at.  Must be in the CC1200 allowed range.
+	 *
 	 * Dots are one time unit, dashes are three.
 	 * 50ms is about the fastest a human can understand, while 125ms is a more reasonable speed.
 	 * Specifics are here: http://www.codebug.org.uk/learn/step/541/morse-code-timing-rules/#:~:text=The%20space%20between%20symbols%20(dots,words%20is%207%20time%20units.
 	 */
-	void configure(CC1200::Band band, float radioFrequency, float morseTimePeriod, float transmitPower);
+	void configure(CC1200::Band band, float radioFrequency, std::chrono::milliseconds morseTimePeriod, float transmitPower);
 
 	struct EncodedMorse
 	{
