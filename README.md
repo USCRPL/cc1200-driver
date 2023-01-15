@@ -35,7 +35,7 @@ The [CC1200](https://www.ti.com/product/CC1200) is a digital radio transceiver s
 
 
 ## Examples
-See the cc1200-demo project for examples of how to use the driver.
+See the [cc1200-demo](https://github.com/mbed-ce/cc1200-demo) project for examples of how to use the driver.
 
 ## Note: Radio Settings
 For configuring radio settings, TI provides a number of configurations for you in their SmartRF application. The MBed OS driver lets you use these, but you can also enter your own settings if you need something different than what SmartRF provides. I will say, in my experience, the CC1200 does tend to be a bit of a house of cards - changing even one value to be incorrect (out of the 10-15 values that you need to configure) can easily cause the chip to stop functioning entirely. So, I recommend you stick to the provided configurations if possible, and only change things if you know what you're doing and are sure that you need a different value.
