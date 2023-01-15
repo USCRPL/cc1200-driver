@@ -6,7 +6,6 @@
 #define LIGHTSPEEDRANGEFINDER_CC1200_H
 
 #include <mbed.h>
-#include <Stream.h>
 
 #include <cstdint>
 
@@ -21,7 +20,7 @@ class CC1200
 	DigitalOut rst;
 
 	// Output to print debug messages to
-	Stream * debugStream;
+	FILE * debugStream;
 
 public:
 
@@ -197,21 +196,22 @@ private:
 	// current RF params
 	float radioFreqHz;
 
-
 public:
 
 	/**
 	 * Construct a CC1200 radio driver from the given set of pins.
 	 *
-	 * @param misoPin
-	 * @param mosiPin
-	 * @param sclkPin
-	 * @param csPin
-	 * @param rstPin
-	 * @param _debugStream Stream to print error/debug information on.
-	 * @param isCC1201 True if the chip is a CC1201, false if it is a CC1200.  The CC1201 is a cheaper option that lacks low bandwidth settings but is otherwise identical.
+	 * @param misoPin Pin connected to SPI MISO
+	 * @param mosiPin Pin connected to SPI MOSI
+	 * @param sclkPin Pin connected to SPI SCLK
+	 * @param csPin Pin connected to SPI CS.  Can be any GPIO.
+	 * @param rstPin Pin connected to the reset line
+	 * @param _debugStream Stream to print error/debug information on.  To print to stdout, pass \c stdout.
+	 *     To disable printing, pass nullptr.
+	 *     Note that debug information is only compiled in if the CC1200_DEBUG cmake option is enabled.
+	 * @param _isCC1201 True if the chip is a CC1201, false if it is a CC1200.  The CC1201 is a cheaper option that lacks low bandwidth settings but is otherwise identical.
 	 */
-	CC1200(PinName mosiPin, PinName misoPin, PinName sclkPin, PinName csPin, PinName rstPin, Stream * _debugStream, bool _isCC1201 = false);
+	CC1200(PinName mosiPin, PinName misoPin, PinName sclkPin, PinName csPin, PinName rstPin, FILE * _debugStream, bool _isCC1201 = false);
 
 	/**
 	 * Reset the chip and attempt to connect to it.

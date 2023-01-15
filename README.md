@@ -42,9 +42,9 @@ For configuring radio settings, TI provides a number of configurations for you i
 
 ## Changelog
 
-### Version 2.0 Jan 2023
+### Version 2.0 Jan 14 2023
 - Migrate to CMake build system
-- Removed usage of deprecated Stream for console prints
+- Switch the debug stream to be a FILE * instead of the deprecated Stream class
 - Bring in CC1200Morse project
 
 ### Version 1.2 May 3 2021

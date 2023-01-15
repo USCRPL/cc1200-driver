@@ -1,8 +1,5 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "readability-magic-numbers"
-//
-// Created by jamie on 3/27/2020.
-//
 
 #include "CC1200.h"
 #include "CC1200Bits.h"
@@ -11,11 +8,12 @@
 #include <cmath>
 #include <array>
 
-// change to 1 to print debug info
-#define CC1200_DEBUG 1
-
-// change to 1 to print register read/write level debug info
-#define CC1200_REGISTER_LEVEL_DEBUG 0
+// Debug macro
+#if CC1200_DEBUG
+#define cc1200DebugPrintf(...) { if(debugStream != nullptr) (void)fprintf(debugStream, __VA_ARGS__); }
+#else
+#define cc1200_dbg_printf() // empty
+#endif
 
 // miscellaneous constants
 #define CC1200_READ (1 << 7) // SPI initial byte flag indicating read
@@ -80,7 +78,7 @@ const size_t maxValue8Bits = constexpr_pow(2, 8) - 1;
 const size_t maxValue20Bits = constexpr_pow(2, 20) - 1;
 const size_t maxValue24Bits = constexpr_pow(2, 24) - 1;
 
-CC1200::CC1200(PinName mosiPin, PinName misoPin, PinName sclkPin, PinName csPin, PinName rstPin, Stream * _debugStream, bool _isCC1201):
+CC1200::CC1200(PinName mosiPin, PinName misoPin, PinName sclkPin, PinName csPin, PinName rstPin, FILE * _debugStream, bool _isCC1201):
 spi(mosiPin, misoPin, sclkPin, csPin, use_gpio_ssel),
 rst(rstPin, 1),
 debugStream(_debugStream),
@@ -111,7 +109,7 @@ bool CC1200::begin()
 
 		if(timeoutTimer.elapsed_time() > resetTimeout)
 		{
-			debugStream->printf("Timeout waiting for ready response from CC1200\n");
+			cc1200DebugPrintf("Timeout waiting for ready response from CC1200\n");
 			break;
 		}
 	}
@@ -123,14 +121,11 @@ bool CC1200::begin()
 	uint8_t expectedPartNumber = isCC1201 ? CC1201_PART_NUMBER : CC1200_PART_NUMBER;
 	if(partNumber != expectedPartNumber)
 	{
-		debugStream->printf("Read incorrect part number 0x%" PRIx8 " from CC1200, expected 0x%" PRIx8 "\n", partNumber, expectedPartNumber);
+		cc1200DebugPrintf("Read incorrect part number 0x%" PRIx8 " from CC1200, expected 0x%" PRIx8 "\n", partNumber, expectedPartNumber);
 		return false;
 	}
 
-#if CC1200_DEBUG
-	debugStream->printf("Detected CC1200, Part Number 0x%" PRIx8 ", Hardware Version %" PRIx8 "\n", partNumber, partVersion);
-#endif
-
+	cc1200DebugPrintf("Detected CC1200, Part Number 0x%" PRIx8 ", Hardware Version %" PRIx8 "\n", partNumber, partVersion);
 
 	// Set packet format settings for this driver
 	// ------------------------------------------------------------------------
@@ -182,16 +177,16 @@ bool CC1200::enqueuePacket(char const * data, size_t len)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Wrote packet of data length %zu:", len);
+	cc1200_dbg_printf("Wrote packet of data length %zu:", len);
 	if(_packetMode == PacketMode::VARIABLE_LENGTH)
 	{
-		debugStream->printf(" %02" PRIx8, static_cast<uint8_t>(len));
+		cc1200_dbg_printf(" %02" PRIx8, static_cast<uint8_t>(len));
 	}
 	for(size_t byteIndex = 0; byteIndex < len; ++byteIndex)
 	{
-		debugStream->printf(" %02" PRIx8, data[byteIndex]);
+		cc1200_dbg_printf(" %02" PRIx8, data[byteIndex]);
 	}
-	debugStream->printf("\n");
+	cc1200_dbg_printf("\n");
 #endif
 	return true;
 }
@@ -271,12 +266,12 @@ size_t CC1200::receivePacket(char *buffer, size_t bufferLen)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Read packet of data length %" PRIu8 ": %" PRIx8, dataLen, static_cast<uint8_t>(dataLen));
+	cc1200_dbg_printf("Read packet of data length %" PRIu8 ": %" PRIx8, dataLen, static_cast<uint8_t>(dataLen));
 	for(size_t byteIndex = 0; byteIndex < dataLen; ++byteIndex)
 	{
-		debugStream->printf(" %" PRIx8, buffer[byteIndex]);
+		cc1200_dbg_printf(" %" PRIx8, buffer[byteIndex]);
 	}
-	debugStream->printf("\n");
+	cc1200_dbg_printf("\n");
 #endif
 
 	return dataLen;
@@ -310,12 +305,12 @@ size_t CC1200::writeStream(const char *buffer, size_t count)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("%zu bytes were free, wrote stream of data length %zu:", freeBytes, bytesToWrite);
+	cc1200_dbg_printf("%zu bytes were free, wrote stream of data length %zu:", freeBytes, bytesToWrite);
 	for(size_t byteIndex = 0; byteIndex < bytesToWrite; ++byteIndex)
 	{
-		debugStream->printf(" %02" PRIx8, buffer[byteIndex]);
+		cc1200_dbg_printf(" %02" PRIx8, buffer[byteIndex]);
 	}
-	debugStream->printf("\n");
+	cc1200_dbg_printf("\n");
 #endif
 
 	return bytesToWrite;
@@ -323,7 +318,6 @@ size_t CC1200::writeStream(const char *buffer, size_t count)
 
 bool CC1200::writeStreamBlocking(const char *buffer, size_t count)
 {
-	//size_t origCount = count;
 	size_t bufferOffset = 0;
 	while(state == State::TX && count > 0)
 	{
@@ -332,7 +326,9 @@ bool CC1200::writeStreamBlocking(const char *buffer, size_t count)
 		bufferOffset += bytesWritten;
 	}
 
-	//debugStream->printf("Read stream of data length %zu\n:", origCount);
+#if CC1200_REGISTER_LEVEL_DEBUG
+	cc1200_dbg_printf("Read stream of data length %zu\n:", origCount);
+#endif
 
 	return count == 0;
 }
@@ -355,12 +351,12 @@ size_t CC1200::readStream(char *buffer, size_t maxLen)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Read stream of data length %zu:", bytesToRead);
+	cc1200_dbg_printf("Read stream of data length %zu:", bytesToRead);
 	for(size_t byteIndex = 0; byteIndex < bytesToRead; ++byteIndex)
 	{
-		debugStream->printf(" %" PRIx8, buffer[byteIndex]);
+		cc1200_dbg_printf(" %" PRIx8, buffer[byteIndex]);
 	}
-	debugStream->printf("\n");
+	cc1200_dbg_printf("\n");
 #endif
 
 	return bytesToRead;
@@ -384,8 +380,10 @@ bool CC1200::readStreamBlocking(char *buffer, size_t count, std::chrono::microse
 		bufferOffset += bytesRead;
 	}
 
-	//debugStream->printf("Read stream of data length %zu, first %" PRIx8 " last %" PRIx8 "\n:", origCount,
-	//		buffer[0], buffer[origCount - 1]);
+#if CC1200_REGISTER_LEVEL_DEBUG
+	cc1200_dbg_printf("Read stream of data length %zu, first %" PRIx8 " last %" PRIx8 "\n:", origCount,
+			buffer[0], buffer[origCount - 1]);
+#endif
 
 	return count == 0;
 }
@@ -548,9 +546,7 @@ void CC1200::setPacketLength(uint16_t length, uint8_t bitLength)
 	pktCfg0 |= _packetBitLength << PKT_CFG0_PKT_BIT_LEN;
 	writeRegister(Register::PKT_CFG0, pktCfg0);
 
-#if CC1200_DEBUG
-	debugStream->printf("Set total length to %zu, byte length = %zu, bit length = %" PRIu8 "\n", _packetTotalLength, _packetByteLength, _packetBitLength);
-#endif
+	cc1200DebugPrintf("Set total length to %zu, byte length = %zu, bit length = %" PRIu8 "\n", _packetTotalLength, _packetByteLength, _packetBitLength);
 }
 
 void CC1200::setCRCEnabled(bool enabled)
@@ -603,8 +599,8 @@ void CC1200::setFSKDeviation(float deviation)
 	writeRegister(Register::MODCFG_DEV_E, modcfgDevE);
 
 #if CC1200_DEBUG
-	debugStream->printf("Setting FSK deviation, requested +-%.00f Hz, setting DEV_E = 0x%" PRIx8 " DEV_M = 0x%" PRIx8 "\n",
-			deviation, actualExponent, actualMantissa);
+	cc1200DebugPrintf("Setting FSK deviation, requested +-%.00f Hz, setting DEV_E = 0x%" PRIx8 " DEV_M = 0x%" PRIx8 "\n",
+					  deviation, actualExponent, actualMantissa);
 
 	float actualDeviation;
 	if(actualExponent == 0)
@@ -616,7 +612,7 @@ void CC1200::setFSKDeviation(float deviation)
 		actualDeviation = (CC1200_OSC_FREQ / twoToThe22) * (256.0f + static_cast<float>(actualMantissa)) * pow(2.0f, static_cast<float>(actualExponent));
 	}
 	// sanity check: calculate actual deviation
-	debugStream->printf("This yields an actual deviation of +-%.00f Hz\n", actualDeviation);
+	cc1200DebugPrintf("This yields an actual deviation of +-%.00f Hz\n", actualDeviation);
 #endif
 }
 
@@ -670,8 +666,8 @@ void CC1200::setSymbolRate(float symbolRateHz)
 	writeRegister(ExtRegister::MDMCFG2, mdmcfg2);
 
 #if CC1200_DEBUG
-	debugStream->printf("Setting symbol rate, requested %.03f Hz, setting SRATE_E = 0x%" PRIx8 " SRATE_M = 0x%" PRIx32 "\n",
-						symbolRateHz, actualExponent, actualMantissa);
+	cc1200DebugPrintf("Setting symbol rate, requested %.03f Hz, setting SRATE_E = 0x%" PRIx8 " SRATE_M = 0x%" PRIx32 "\n",
+					  symbolRateHz, actualExponent, actualMantissa);
 
 	// sanity check: calculate actual symbol rate
 	float actualSymbolRateSps;
@@ -687,10 +683,10 @@ void CC1200::setSymbolRate(float symbolRateHz)
 							  / twoToThe39;
 	}
 
-	debugStream->printf("This yields an actual symbol rate of %.02f Hz\n", actualSymbolRateSps);
+	cc1200DebugPrintf("This yields an actual symbol rate of %.02f Hz\n", actualSymbolRateSps);
 
 	uint8_t actualUpsampling = static_cast<uint8_t>(pow(2.0f, static_cast<float>(upsamplerPVal)));
-	debugStream->printf("Also setting upsampling factor to %" PRIu8 " via UPSAMPLER_P = %" PRIx8 "\n", actualUpsampling, upsamplerPVal);
+	cc1200DebugPrintf("Also setting upsampling factor to %" PRIu8 " via UPSAMPLER_P = %" PRIx8 "\n", actualUpsampling, upsamplerPVal);
 #endif
 }
 
@@ -721,9 +717,7 @@ void CC1200::setOutputPower(float outPower)
 	paCfg1 |= actualPowerRamp << PA_CFG1_PA_POWER_RAMP;
 	writeRegister(Register::PA_CFG1, paCfg1);
 
-#if CC1200_DEBUG
-	debugStream->printf("Output power set to %.01f dBm\n", outPower);
-#endif
+	cc1200DebugPrintf("Output power set to %.01f dBm\n", outPower);
 }
 
 const float CC1200::ASK_MIN_POWER_OFF = -17.5f;
@@ -827,11 +821,9 @@ void CC1200::setRadioFrequency(CC1200::Band band, float frequencyHz)
 	// sanity check: calculate actual frequency
 	radioFreqHz = (static_cast<float>(actualFreqRegValue) * CC1200_OSC_FREQ) / (twoToThe16 * static_cast<float>(loDividerValue));
 
-#if CC1200_DEBUG
-	debugStream->printf("Setting radio frequency, requested %.00f Hz, setting FREQ = 0x%" PRIx32 "\n",
-						frequencyHz, actualFreqRegValue);
-	debugStream->printf("This yields an actual frequency of %.00f Hz\n", radioFreqHz);
-#endif
+	cc1200DebugPrintf("Setting radio frequency, requested %.00f Hz, setting FREQ = 0x%" PRIx32 "\n",
+					  frequencyHz, actualFreqRegValue);
+	cc1200DebugPrintf("This yields an actual frequency of %.00f Hz\n", radioFreqHz);
 }
 
 // helper function for setRXFilterBandwidth:
@@ -935,11 +927,9 @@ void CC1200::setRXFilterBandwidth(float bandwidthHz, bool preferHigherCICDec)
 	adcCicDecimation = possibleADCDecimations[bestDecimationIndex];
 	currentRXFilterBW = calcReceiveBandwidth(possibleADCDecimations[bestDecimationIndex], actualBBDecimations[bestDecimationIndex]);
 
-#if CC1200_DEBUG
-	debugStream->printf("Setting BB decimation to %" PRIu8 " and ADC decimation to %" PRIu8 "\n",
-			actualBBDecimations[bestDecimationIndex], possibleADCDecimations[bestDecimationIndex]);
-	debugStream->printf("This yields an actual RX filter BW of %.00f\n", currentRXFilterBW);
-#endif
+	cc1200DebugPrintf("Setting BB decimation to %" PRIu8 " and ADC decimation to %" PRIu8 "\n",
+					  actualBBDecimations[bestDecimationIndex], possibleADCDecimations[bestDecimationIndex]);
+	cc1200DebugPrintf("This yields an actual RX filter BW of %.00f\n", currentRXFilterBW);
 }
 
 void CC1200::configureDCFilter(bool enableAutoFilter, uint8_t settlingCfg, uint8_t cutoffCfg)
@@ -985,9 +975,7 @@ void CC1200::configurePreamble(uint8_t preambleLengthCfg, uint8_t preambleFormat
 	preambleCfg1 |= preambleFormatCfg << PREAMBLE_CFG1_PREAMBLE_WORD;
 	writeRegister(Register::PREAMBLE_CFG1, preambleCfg1);
 
-#if CC1200_DEBUG
-	debugStream->printf("Preamble length CFG set to 0x%" PRIx8 "\n", preambleLengthCfg);
-#endif
+	cc1200DebugPrintf("Preamble length CFG set to 0x%" PRIx8 "\n", preambleLengthCfg);
 }
 
 void CC1200::setPARampRate(uint8_t firstRampLevel, uint8_t secondRampLevel, CC1200::RampTime rampTime)
@@ -1089,7 +1077,7 @@ float CC1200::getRSSIRegister()
 		rssiInt |= (0b1111 << 12);
 	}
 
-	//debugStream->printf("Approx RSSI: %" PRIi8 ", exact RSSI: %f\n", static_cast<int8_t>(rssi1Val), static_cast<float>(rssiInt) * 0.0625f);
+	//cc1200_dbg_printf("Approx RSSI: %" PRIi8 ", exact RSSI: %f\n", static_cast<int8_t>(rssi1Val), static_cast<float>(rssiInt) * 0.0625f);
 
 	return static_cast<float>(rssiInt) * 0.0625f; // conversion factor given in datasheet
 }
@@ -1151,11 +1139,9 @@ void CC1200::setIFCfg(IFCfg value, bool enableIQIC)
 	}
 	writeRegister(Register::IQIC, iqicValue);
 
-#if CC1200_DEBUG
-	debugStream->printf("Setting IF Mix Cfg to 0x%" PRIx8 " and IQIC_EN to %d\n", static_cast<uint8_t>(value),
-					 !!(iqicValue & (1 << IQIC_IQIC_EN))); // note: double ! used to convert boolean to either 1 or 0.
-	debugStream->printf("This yields an actual IF of %.00f\n", effectiveIF);
-#endif
+	cc1200DebugPrintf("Setting IF Mix Cfg to 0x%" PRIx8 " and IQIC_EN to %d\n", static_cast<uint8_t>(value),
+					  !!(iqicValue & (1 << IQIC_IQIC_EN))); // note: double ! used to convert boolean to either 1 or 0.
+	cc1200DebugPrintf("This yields an actual IF of %.00f\n", effectiveIF);
 }
 
 uint8_t CC1200::readRegister(CC1200::Register reg)
@@ -1166,7 +1152,7 @@ uint8_t CC1200::readRegister(CC1200::Register reg)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Read register 0x%" PRIx8 " -> 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), regValue);
+	cc1200_dbg_printf("Read register 0x%" PRIx8 " -> 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), regValue);
 #endif
 
 	return regValue;
@@ -1180,7 +1166,7 @@ void CC1200::writeRegister(Register reg, uint8_t value)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Wrote register 0x%" PRIx8 " <- 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), value);
+	cc1200_dbg_printf("Wrote register 0x%" PRIx8 " <- 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), value);
 #endif
 }
 
@@ -1198,7 +1184,7 @@ void CC1200::writeRegisters(CC1200::Register startReg, uint8_t const *values, si
 #if CC1200_REGISTER_LEVEL_DEBUG
 	for(size_t byteIndex = 0; byteIndex < numRegisters; ++byteIndex)
 	{
-		debugStream->printf("Wrote register 0x%" PRIx8 " <- 0x%" PRIx8 "\n",
+		cc1200_dbg_printf("Wrote register 0x%" PRIx8 " <- 0x%" PRIx8 "\n",
 				static_cast<uint8_t>(static_cast<uint8_t>(startReg) + byteIndex),
 				values[byteIndex]);
 	}
@@ -1211,7 +1197,7 @@ void CC1200::loadStatusByte(uint8_t status)
 	state = static_cast<State>((status >> 4) & 0x7);
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Updated status, state = 0x%" PRIx8 " ready = %s\n", static_cast<uint8_t>(state), chipReady ? "true" : "false");
+	cc1200_dbg_printf("Updated status, state = 0x%" PRIx8 " ready = %s\n", static_cast<uint8_t>(state), chipReady ? "true" : "false");
 #endif
 }
 
@@ -1224,7 +1210,7 @@ uint8_t CC1200::readRegister(CC1200::ExtRegister reg)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Read ext register 0x%" PRIx8 " -> 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), regValue);
+	cc1200_dbg_printf("Read ext register 0x%" PRIx8 " -> 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), regValue);
 #endif
 
 	return regValue;
@@ -1239,7 +1225,7 @@ void CC1200::writeRegister(CC1200::ExtRegister reg, uint8_t value)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Wrote ext register 0x%" PRIx8 " <- 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), value);
+	cc1200_dbg_printf("Wrote ext register 0x%" PRIx8 " <- 0x%" PRIx8 "\n", static_cast<uint8_t>(reg), value);
 #endif
 }
 
@@ -1258,7 +1244,7 @@ void CC1200::writeRegisters(CC1200::ExtRegister startReg, uint8_t const *values,
 #if CC1200_REGISTER_LEVEL_DEBUG
 	for(size_t byteIndex = 0; byteIndex < numRegisters; ++byteIndex)
 	{
-		debugStream->printf("Wrote extended register 0x%" PRIx8 " <- 0x%" PRIx8 "\n",
+		cc1200_dbg_printf("Wrote extended register 0x%" PRIx8 " <- 0x%" PRIx8 "\n",
 							static_cast<uint8_t>(static_cast<uint8_t>(startReg) + byteIndex),
 							values[byteIndex]);
 	}
@@ -1272,7 +1258,7 @@ void CC1200::sendCommand(CC1200::Command command)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Sent SPI command 0x%" PRIx8 "\n", static_cast<uint8_t>(command));
+	cc1200_dbg_printf("Sent SPI command 0x%" PRIx8 "\n", static_cast<uint8_t>(command));
 #endif
 }
 
@@ -1285,7 +1271,7 @@ uint8_t CC1200::readRXFIFOByte(uint8_t address)
 	spi.deselect();
 
 #if CC1200_REGISTER_LEVEL_DEBUG
-	debugStream->printf("Read RX FIFO[0x%" PRIx8 "]: 0x%x 0x%x -> 0x%" PRIx8 "\n", static_cast<uint8_t>(address), CC1200_READ | CC1200_MEM_ACCESS, CC1200_RX_FIFO | address, value);
+	cc1200_dbg_printf("Read RX FIFO[0x%" PRIx8 "]: 0x%x 0x%x -> 0x%" PRIx8 "\n", static_cast<uint8_t>(address), CC1200_READ | CC1200_MEM_ACCESS, CC1200_RX_FIFO | address, value);
 #endif
 
 	return value;
