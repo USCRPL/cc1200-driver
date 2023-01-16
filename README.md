@@ -6,6 +6,8 @@ This driver can be used in Mbed OS projects to control the CC1200 (and CC1201) r
 
 As an additional utility, this driver includes the CC1200Morse class, which can be used to dynamically reconfigure the CC1200 to send Morse code.  Great for ham radio applications!
 
+Written by Jamie Smith @ USC Rocket Propulsion Lab.
+
 Migrated from the original Mbed repository [here](https://os.mbed.com/users/MultipleMonomials/code/CC1200/shortlog/).
 
 ## About the CC1200
