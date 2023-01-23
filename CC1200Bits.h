@@ -1,9 +1,25 @@
+/*
+ * Copyright (c) 2019-2023 USC Rocket Propulsion Lab
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Bit shifts for CC1200 registers
 //
 
-#ifndef LIGHTSPEEDRANGEFINDER_CC1200BITS_H
-#define LIGHTSPEEDRANGEFINDER_CC1200BITS_H
+#ifndef CC1200_CC1200BITS_H
+#define CC1200_CC1200BITS_H
 
 #define PKT_CFG2_BYTE_SWAP_EN 6
 #define PKT_CFG2_FG_MODE_EN 5
@@ -136,4 +152,4 @@
 #define AGC_CFG1_AGC_WIN_SIZE 3
 #define AGC_CFG1_AGC_SETTLE_WAIT 0
 
-#endif //LIGHTSPEEDRANGEFINDER_CC1200BITS_H
+#endif //CC1200_CC1200BITS_H
